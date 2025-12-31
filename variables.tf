@@ -15,10 +15,10 @@ variable "ami" {
 
 variable "instance_type" {
     type = string
-    default = "t2.micro"
+    default = "t3.micro"
 }
 
 variable "instance_type_for_nexus" {
     type = string
-    default = "t2.medium"
+    default = "m7i-flex.large"
 }
