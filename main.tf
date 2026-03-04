@@ -80,21 +80,6 @@ resource "aws_route_table_association" "MyLab-rtba" {
     route_table_id = aws_route_table.MyLab-rtb.id
 }
 
-# Create an AWS EC2 Instance to host Jenkins
-resource "aws_instance" "Jenkins" {
-  ami           = var.ami
-  instance_type = var.instance_type
-  key_name = "KEY"
-  vpc_security_group_ids = [aws_security_group.MyLab-SG.id]
-  subnet_id = aws_subnet.MyLab-Subnet1.id
-  associate_public_ip_address = true
-  user_data = file("./userdata/InstallJenkins.sh")
-
-  tags = {
-    Name = "Jenkins-Server"
-  }
-}
-
 # Create an AWS EC2 Instance to host Ansible Controller
 resource "aws_instance" "Ansible-Controller" {
   ami           = var.ami
