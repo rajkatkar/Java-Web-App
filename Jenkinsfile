@@ -83,6 +83,14 @@ pipeline {
                 }
             }
         }
+         stage('Print Environment variables') {
+            steps {
+                echo "Artifact ID is '${ArtifactId}'"
+                echo "Group ID is '${GroupId}'"
+                echo "Version is '${Version}'"
+                echo "Name is '${Name}'"
+            }
+        }
 
         stage('Deploy using Ansible') {
             steps {
