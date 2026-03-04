@@ -1,77 +1,87 @@
 pipeline {
     agent any
+
     tools {
         maven 'maven'
     }
+
     environment {
         ArtifactId = readMavenPom().getArtifactId()
         Version = readMavenPom().getVersion()
         GroupId = readMavenPom().getGroupId()
-        Name = readMavenPom().getName()
     }
+
     stages {
+
+        stage('Checkout Code') {
+            steps {
+                git 'https://github.com/yourrepo/project.git'
+            }
+        }
+
+        stage('Terraform Init') {
+            steps {
+                dir('terraform') {
+                    sh 'terraform init'
+                }
+            }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                dir('terraform') {
+                    sh 'terraform plan'
+                }
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                dir('terraform') {
+                    sh 'terraform apply -auto-approve'
+                }
+            }
+        }
+
+        stage('Get Nexus IP') {
+            steps {
+                script {
+                    def nexus_ip = sh(
+                        script: "cd terraform && terraform output -raw nexus_public_ip",
+                        returnStdout: true
+                    ).trim()
+
+                    env.NEXUS_IP = nexus_ip
+                }
+            }
+        }
+
         stage('Build') {
             steps {
-                sh 'mvn clean install package'
+                sh 'mvn clean package'
             }
         }
-        stage('Test') {
-            steps {
-                echo 'Testing...'
-            }
-        }
+
         stage('Publish to Nexus') {
-            steps { 
+            steps {
                 script {
-                    def NexusRepo = Version.endsWith("SNAPSHOT") ? "MyLab-SNAPSHOT" : "MyLab-RELEASE"
-                    
-                    nexusArtifactUploader artifacts: 
-                    [
-                        [
-                            artifactId: "${ArtifactId}", 
-                            classifier: '', 
-                            file: "target/${ArtifactId}-${Version}.war", 
-                            type: 'war'
-                        ]
-                    ], 
-                    credentialsId: 'nexus', 
-                    groupId: "${GroupId}", 
-                    nexusUrl: '54.196.133.74:8081', 
-                    nexusVersion: 'nexus3', 
-                    protocol: 'http', 
-                    repository: "${NexusRepo}", 
+
+                    nexusArtifactUploader artifacts: [[
+                        artifactId: "${ArtifactId}",
+                        classifier: '',
+                        file: "target/${ArtifactId}-${Version}.war",
+                        type: 'war'
+                    ]],
+                    credentialsId: 'nexus',
+                    groupId: "${GroupId}",
+                    nexusUrl: "${env.NEXUS_IP}:8081",
+                    nexusVersion: 'nexus3',
+                    protocol: 'http',
+                    repository: 'MyLab-RELEASE',
                     version: "${Version}"
                 }
             }
         }
-        stage('Print Environment variables') {
-            steps {
-                echo "Artifact ID is '${ArtifactId}'"
-                echo "Group ID is '${GroupId}'"
-                echo "Version is '${Version}'"
-                echo "Name is '${Name}'"
-            }
-        }
-        stage('Deploy to Docker') {
-            steps {
-                echo 'Deploying...'
-                sshPublisher(publishers: 
-                [sshPublisherDesc(
-                    configName: 'ansible-controller', 
-                    transfers: [
-                        sshTransfer(
-                            sourceFiles: 'download-deploy.yaml, hosts',
-                            remoteDirectory: '/playbooks',
-                            cleanRemote: false,
-                            execCommand: 'cd playbooks/ && ansible-playbook download-deploy.yaml -i hosts', 
-                            execTimeout: 120000, 
-                        )
-                    ], 
-                    usePromotionTimestamp: false, 
-                    useWorkspaceInPromotion: false, 
-                    verbose: false)
-                ])
-            }
-        }
+
     }
 }
