@@ -3,8 +3,8 @@
 # Update packages
 apt update -y
 
-# Install Java (required for Nexus)
-apt install -y openjdk-8-jdk wget
+# Install Java and wget
+apt install -y openjdk-17-jdk wget
 
 # Move to /opt directory
 cd /opt
@@ -15,20 +15,26 @@ wget https://download.sonatype.com/nexus/3/nexus-3.47.1-01-unix.tar.gz
 # Extract Nexus
 tar -xvf nexus-3.47.1-01-unix.tar.gz
 
-# Rename directory
+# Remove tar file
+rm -rf nexus-3.47.1-01-unix.tar.gz
+
+# Rename folder
 mv nexus-3.* nexus3
 
 # Create nexus user
-adduser --disabled-password --gecos "" nexus
+useradd -m -s /bin/bash nexus
 
-# Give permission
+# Create sonatype-work directory
+mkdir -p /opt/sonatype-work
+
+# Give permissions
 chown -R nexus:nexus /opt/nexus3
 chown -R nexus:nexus /opt/sonatype-work
 
-# Configure Nexus to run as nexus user
+# Configure nexus to run as nexus user
 echo 'run_as_user="nexus"' > /opt/nexus3/bin/nexus.rc
 
-# Create systemd service
+# Create systemd service for Nexus
 cat <<EOF > /etc/systemd/system/nexus.service
 [Unit]
 Description=Nexus Repository Manager
@@ -37,6 +43,7 @@ After=network.target
 [Service]
 Type=forking
 User=nexus
+LimitNOFILE=65536
 ExecStart=/opt/nexus3/bin/nexus start
 ExecStop=/opt/nexus3/bin/nexus stop
 Restart=on-abort
@@ -48,7 +55,7 @@ EOF
 # Reload systemd
 systemctl daemon-reload
 
-# Enable Nexus
+# Enable Nexus service
 systemctl enable nexus
 
 # Start Nexus
