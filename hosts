@@ -1,2 +1,2 @@
 [dockerhost]
-10.0.0.92
+DOCKER_IP ansible_user=ansibleadmin

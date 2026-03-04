@@ -1,34 +1,35 @@
 #!/bin/bash
 
-# Add user ansible admin
-useradd ansibleadmin 
+# Update packages
+apt update -y
 
-# Set password: the below command will avoid re-entering the password
-echo "ansibleadmin" | passwd --stdin ansibleadmin
+# Create ansible user
+useradd -m ansibleadmin
 
-# Modify the sudoers file at /etc/sudoers and add entry
-echo 'ansibleadmin  ALL=(ALL)   NOPASSWD: ALL' | tee -a /etc/sudoers
-echo 'ec2-user ALL=(ALL) NOPASSWD: ALL' | tee -a /etc/sudoers
+# Set password
+echo "ansibleadmin:ansibleadmin" | chpasswd
 
-# Enable Password Authentication
-sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
-systemctl restart sshd
+# Give sudo access
+echo 'ansibleadmin ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
-# Update the installed packages and package cache
-yum update -y
+# Enable password authentication
+sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+systemctl restart ssh
 
-# Install the most recent Docker Engine package
-amazon-linux-extras install docker -y
+# Install Docker
+apt install -y docker.io
 
-# Start the Docker service
+# Start Docker
 systemctl start docker
 
-# Auto start Docker service after booting
+# Enable Docker at boot
 systemctl enable docker
 
-# Install docker module for Python2 (require for ansible)
-yum install python-pip -y
-pip install docker-py
+# Install pip
+apt install -y python3-pip
 
-# Add user ansible admin to docker group (execute without using sudo)
-usermod -a -G docker ansibleadmin
+# Install docker python module for Ansible
+pip3 install docker
+
+# Add ansible user to docker group
+usermod -aG docker ansibleadmin
