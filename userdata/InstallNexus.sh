@@ -4,7 +4,7 @@
 apt update -y
 
 # Install Java and wget
-apt install -y openjdk-17-jdk wget
+apt install -y openjdk-8-jdk wget
 
 # Move to /opt directory
 cd /opt
