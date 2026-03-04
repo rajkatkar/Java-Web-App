@@ -1,30 +1,35 @@
 #!/bin/bash
 
-# Update packages
 apt update -y
 
 # Create ansible user
-useradd -m ansibleadmin
+useradd -m -s /bin/bash ansibleadmin
 
 # Set password
 echo "ansibleadmin:ansibleadmin" | chpasswd
 
-# Add sudo permission
-echo "ansibleadmin ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+# Give sudo access
+echo "ansibleadmin ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/ansibleadmin
 
-# Enable password authentication
-sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+# Enable SSH password login
+sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
+# Fix Ubuntu EC2 cloud-init SSH config
+sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config.d/60-cloudimg-settings.conf
+
+# Restart SSH
 systemctl restart ssh
 
-# Install required packages
+# Install packages
 apt install -y software-properties-common
 
 # Install Ansible
-apt-add-repository --yes --update ppa:ansible/ansible
+add-apt-repository --yes --update ppa:ansible/ansible
 apt install -y ansible
 
-# Install Python pip
+# Install pip
 apt install -y python3-pip
 
-# Install docker python library for Ansible docker module
+# Install docker python module
 pip3 install docker
