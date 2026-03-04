@@ -65,6 +65,70 @@ AWS Secret Access Key
 Default region name
 Default output format 
 ```
+Step 2: Install Jenkins Server (Manual Setup)
+
+Create an Ubuntu EC2 instance.
+
+Example configuration:
+
+AMI: Ubuntu
+Instance Type: t2.medium
+Ports: 22, 8080
+
+SSH into the server:
+
+ssh -i key.pem ubuntu@JENKINS_PUBLIC_IP
+
+Update packages:
+
+sudo apt update -y
+
+Install Java:
+
+sudo apt install openjdk-17-jdk -y
+
+Install Jenkins:
+
+curl -fsSL https://pkg.jenkins.io/debian/jenkins.io.key | sudo tee \
+/usr/share/keyrings/jenkins-keyring.asc > /dev/null
+echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
+https://pkg.jenkins.io/debian binary/ | sudo tee \
+/etc/apt/sources.list.d/jenkins.list > /dev/null
+sudo apt update
+sudo apt install jenkins -y
+
+Start Jenkins:
+
+sudo systemctl start jenkins
+sudo systemctl enable jenkins
+
+Get admin password:
+
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+
+Open Jenkins in browser:
+
+http://JENKINS_PUBLIC_IP:8080
+
+🔧 Step 3: Install Terraform & Maven on Jenkins
+
+Install Terraform:
+
+wget https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip
+unzip terraform_1.5.7_linux_amd64.zip
+sudo mv terraform /usr/local/bin/
+
+Check version:
+
+terraform -version
+
+Install Maven:
+
+sudo apt install maven -y
+
+Check version:
+
+mvn -version
 
 Copy 2 files `main.tf`, `variables.tf`, and folder `userdata/` of this Github repo to your working directory. Run the following commands to start provisioning:
 > Before running terraform, login to the AWS console and create the keypair name `ec2`. If you want to use other keypairs, make sure to update this keypair name in `resource "aws_instance" {key_name}` of `main.tf`
@@ -95,7 +159,7 @@ SG allow inbound ports: `22`, `443`, `80`, `8081`, `8080`
 
 All provisioned EC2 use the same keypair `ec2` which is manually created on the AWS console, you can use it to SSH remote EC2 CLI later. 
 
-`Jenkins Server` and `Nexus Server` use the default user of AWS EC2: **ec2-user**. For `Ansible Controller` and `Dockerhost`, you will notice these configurations in [Ansible](/userdata/InstallAnsibleController.sh) and [Docker](/userdata/InstallDocker.sh) userdata scripts:
+`Jenkins Server` and `Nexus Server` use the default user of AWS EC2: **ubuntu**. For `Ansible Controller` and `Dockerhost`, you will notice these configurations in [Ansible](/userdata/InstallAnsibleController.sh) and [Docker](/userdata/InstallDocker.sh) userdata scripts:
 
 ```
 # Add user ansible admin
